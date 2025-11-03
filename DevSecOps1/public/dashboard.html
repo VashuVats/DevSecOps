@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - OWASP Vulnerable App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="lock-icon">🔓</span>
+                <h1>OWASP Vulnerable Application</h1>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+            </nav>
+        </header>
+
+        <div class="warning-banner">
+            <span class="warning-icon">⚠️</span>
+            <strong>WARNING:</strong> This dashboard contains client-side vulnerabilities!
+        </div>
+
+        <main class="main-content">
+            <h2>User Dashboard</h2>
+
+            <!-- VULNERABILITY: Client-side access control -->
+            <div class="test-card">
+                <h3>Welcome, <span id="username">Guest</span>!</h3>
+                <p>Role: <span id="user-role">Not logged in</span></p>
+                <p class="hint">💡 Check localStorage to see if you can modify your role!</p>
+            </div>
+
+            <!-- User Stats -->
+            <div class="vuln-grid">
+                <div class="vuln-card client-side">
+                    <h3>📊 Your Statistics</h3>
+                    <div id="user-stats">
+                        <p>Total Logins: <strong>42</strong></p>
+                        <p>Last Login: <strong id="last-login">Never</strong></p>
+                        <p>Account Created: <strong>2024-01-01</strong></p>
+                    </div>
+                </div>
+
+                <div class="vuln-card server-side">
+                    <h3>🔑 API Access</h3>
+                    <p>Your API Key: <code id="api-key">Loading...</code></p>
+                    <button onclick="showApiKey()" class="btn btn-primary">Reveal API Key</button>
+                    <p class="hint">💡 API keys should never be exposed client-side!</p>
+                </div>
+
+                <div class="vuln-card auth">
+                    <h3>🎯 Quick Actions</h3>
+                    <button onclick="viewProfile()" class="btn btn-secondary">View Profile</button>
+                    <button onclick="accessAdmin()" class="btn btn-warning">Admin Panel</button>
+                    <button onclick="logout()" class="btn btn-danger">Logout</button>
+                </div>
+            </div>
+
+            <!-- VULNERABILITY: Insecure Direct Object Reference -->
+            <div class="test-card">
+                <h3>View User Profile (IDOR Vulnerability)</h3>
+                <p class="test-description">Access any user's profile by changing the user ID.</p>
+                <form class="test-form" onsubmit="return viewUserProfile(event)">
+                    <input type="number" id="user-id" placeholder="User ID (try: 1, 2, 3)" class="input-field"
+                        value="1">
+                    <button type="submit" class="btn btn-primary">View Profile</button>
+                </form>
+                <div id="profile-data" class="results-box"></div>
+                <p class="hint">💡 Try accessing user IDs 1, 2, 3 without authentication!</p>
+            </div>
+
+            <!-- VULNERABILITY: Client-side filtering -->
+            <div class="test-card">
+                <h3>Product Catalog (Client-Side Filtering)</h3>
+                <p class="test-description">Products are filtered client-side - inspect the code to see hidden products!
+                </p>
+                <div id="products-list"></div>
+                <button onclick="showAllProducts()" class="btn btn-warning">Show Hidden Products</button>
+            </div>
+
+            <!-- Hidden data in HTML comments -->
+            <!-- 
+                VULNERABILITY: Sensitive data in HTML comments
+                Admin credentials: admin / admin123
+                Database connection: mongodb://admin:password@localhost:27017
+                Secret API endpoint: /api/v1/admin/secret
+            -->
+
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 OWASP Vulnerable Application | For Educational Purposes Only</p>
+        </footer>
+    </div>
+
+    <script>
+        // VULNERABILITY: Hardcoded sensitive data
+        const API_ENDPOINT = 'http://localhost:3000/api';
+        const ADMIN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+
+        // Load user data from localStorage
+        window.addEventListener('DOMContentLoaded', function () {
+            const username = localStorage.getItem('username') || 'Guest';
+            const role = localStorage.getItem('role') || 'user';
+
+            document.getElementById('username').textContent = username;
+            document.getElementById('user-role').textContent = role;
+            document.getElementById('last-login').textContent = new Date().toLocaleString();
+
+            loadProducts();
+        });
+
+        function showApiKey() {
+            const apiKey = localStorage.getItem('apiKey') || 'sk_live_51234567890abcdef';
+            document.getElementById('api-key').textContent = apiKey;
+        }
+
+        function viewProfile() {
+            window.location.href = '/profile.html';
+        }
+
+        function accessAdmin() {
+            // VULNERABILITY: Client-side authorization check
+            const role = localStorage.getItem('role');
+            if (role === 'admin') {
+                window.location.href = '/admin.html';
+            } else {
+                alert('Access Denied! But you can bypass this by changing localStorage...');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            alert('Logged out! (Not really, just cleared storage)');
+            window.location.href = '/';
+        }
+
+        // VULNERABILITY: Insecure Direct Object Reference
+        async function viewUserProfile(event) {
+            event.preventDefault();
+            const userId = document.getElementById('user-id').value;
+            const resultDiv = document.getElementById('profile-data');
+
+            try {
+                const response = await fetch(`/user/${userId}`);
+                const data = await response.json();
+
+                // VULNERABILITY: Displaying sensitive data
+                resultDiv.innerHTML = `
+                    <div class="message message-success">
+                        <h4>User Profile #${userId}</h4>
+                        <p><strong>Username:</strong> ${data.username}</p>
+                        <p><strong>Email:</strong> ${data.email}</p>
+                        <p><strong>Role:</strong> ${data.role}</p>
+                        <p><strong>Password:</strong> ${data.password}</p>
+                        <p><strong>API Key:</strong> ${data.api_key}</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="message message-error">Error: ${error.message}</div>`;
+            }
+
+            return false;
+        }
+
+        // VULNERABILITY: Sensitive data in JavaScript
+        const products = [
+            { id: 1, name: 'Laptop', price: 999.99, visible: true },
+            { id: 2, name: 'Mouse', price: 29.99, visible: true },
+            { id: 3, name: 'Secret Product', price: 0.01, visible: false, description: 'Admin only!' },
+            { id: 4, name: 'Hidden Item', price: 1000000, visible: false, description: 'Not for sale' }
+        ];
+
+        function loadProducts() {
+            const productsList = document.getElementById('products-list');
+            const visibleProducts = products.filter(p => p.visible);
+
+            productsList.innerHTML = visibleProducts.map(p => `
+                <div class="comment-item">
+                    <h4>${p.name}</h4>
+                    <p>Price: $${p.price}</p>
+                </div>
+            `).join('');
+        }
+
+        function showAllProducts() {
+            const productsList = document.getElementById('products-list');
+
+            // VULNERABILITY: Exposing hidden data
+            productsList.innerHTML = products.map(p => `
+                <div class="comment-item ${!p.visible ? 'message-warning' : ''}">
+                    <h4>${p.name} ${!p.visible ? '(HIDDEN)' : ''}</h4>
+                    <p>Price: $${p.price}</p>
+                    ${p.description ? `<p>${p.description}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // VULNERABILITY: Exposing functions globally
+        window.debugFunctions = {
+            showApiKey,
+            viewProfile,
+            accessAdmin,
+            showAllProducts
+        };
+    </script>
+</body>
+
+</html>

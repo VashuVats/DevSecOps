@@ -1,0 +1,33 @@
+{
+  "name": "owasp-vulnerable-app",
+  "version": "1.0.0",
+  "description": "Intentionally vulnerable web application demonstrating OWASP Top 10 vulnerabilities for DevSecOps learning",
+  "main": "vulnerable.js",
+  "scripts": {
+    "start": "node vulnerable.js",
+    "dev": "nodemon vulnerable.js",
+    "test": "echo \"No tests - this is a vulnerable app!\" && exit 0"
+  },
+  "keywords": [
+    "owasp",
+    "security",
+    "vulnerable",
+    "devsecops",
+    "cybersecurity"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "body-parser": "^1.20.2",
+    "sqlite3": "^5.1.6",
+    "jsonwebtoken": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

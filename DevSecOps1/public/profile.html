@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - OWASP Vulnerable App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="lock-icon">🔓</span>
+                <h1>OWASP Vulnerable Application</h1>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="profile.html" class="nav-link active">Profile</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <h2>User Profile</h2>
+
+            <div class="test-card">
+                <h3>Profile Information</h3>
+                <form class="test-form" onsubmit="return updateProfile(event)">
+                    <label>Username:</label>
+                    <input type="text" id="profile-username" class="input-field" value="user">
+
+                    <label>Email:</label>
+                    <input type="email" id="profile-email" class="input-field" value="user@example.com">
+
+                    <label>Bio (XSS Vulnerable):</label>
+                    <textarea id="profile-bio" class="textarea-field" rows="4"
+                        placeholder="Tell us about yourself..."></textarea>
+
+                    <!-- VULNERABILITY: Hidden field that can be manipulated -->
+                    <input type="hidden" id="profile-role" value="user">
+
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                </form>
+                <p class="hint">💡 Try injecting XSS in the bio field or manipulating the hidden role field!</p>
+            </div>
+
+            <div id="profile-display" class="test-card" style="display:none;">
+                <h3>Your Profile</h3>
+                <div id="profile-content"></div>
+            </div>
+
+            <!-- VULNERABILITY: Password change without current password -->
+            <div class="test-card">
+                <h3>Change Password (Insecure)</h3>
+                <form class="test-form" onsubmit="return changePassword(event)">
+                    <label>New Password:</label>
+                    <input type="password" id="new-password" class="input-field" placeholder="New password">
+
+                    <label>Confirm Password:</label>
+                    <input type="password" id="confirm-password" class="input-field" placeholder="Confirm password">
+
+                    <button type="submit" class="btn btn-warning">Change Password</button>
+                </form>
+                <p class="hint">💡 No current password required - major security flaw!</p>
+            </div>
+
+            <!-- VULNERABILITY: Account deletion without confirmation -->
+            <div class="test-card">
+                <h3>Danger Zone</h3>
+                <button onclick="deleteAccount()" class="btn btn-danger">Delete Account</button>
+                <p class="hint">💡 No confirmation required - CSRF vulnerable!</p>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 OWASP Vulnerable Application | For Educational Purposes Only</p>
+        </footer>
+    </div>
+
+    <script>
+        function updateProfile(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('profile-username').value;
+            const email = document.getElementById('profile-email').value;
+            const bio = document.getElementById('profile-bio').value;
+            const role = document.getElementById('profile-role').value;
+
+            // VULNERABILITY: No CSRF protection
+            // VULNERABILITY: Client-side validation only
+
+            const profileDisplay = document.getElementById('profile-display');
+            const profileContent = document.getElementById('profile-content');
+
+            // VULNERABILITY: XSS - Directly inserting user input
+            profileContent.innerHTML = `
+                <p><strong>Username:</strong> ${username}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Role:</strong> ${role}</p>
+                <p><strong>Bio:</strong></p>
+                <div class="results-box">${bio}</div>
+            `;
+
+            profileDisplay.style.display = 'block';
+            profileDisplay.scrollIntoView({ behavior: 'smooth' });
+
+            // Store in localStorage (VULNERABLE)
+            localStorage.setItem('username', username);
+            localStorage.setItem('role', role);
+
+            return false;
+        }
+
+        function changePassword(event) {
+            event.preventDefault();
+
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // VULNERABILITY: No current password verification
+            // VULNERABILITY: Weak password policy
+
+            if (newPassword !== confirmPassword) {
+                alert('Passwords do not match!');
+                return false;
+            }
+
+            if (newPassword.length < 3) {
+                alert('Password too short! (But we accept it anyway)');
+            }
+
+            alert('Password changed successfully! (Not really, this is just client-side)');
+
+            return false;
+        }
+
+        function deleteAccount() {
+            // VULNERABILITY: No confirmation dialog
+            // VULNERABILITY: No CSRF protection
+            // VULNERABILITY: Client-side only
+
+            if (confirm('Are you sure? (This is the only protection)')) {
+                alert('Account deleted! (Not really, just a demo)');
+                localStorage.clear();
+                window.location.href = '/';
+            }
+        }
+
+        // Load existing profile data
+        window.addEventListener('DOMContentLoaded', function () {
+            const username = localStorage.getItem('username');
+            if (username) {
+                document.getElementById('profile-username').value = username;
+            }
+        });
+    </script>
+</body>
+
+</html>

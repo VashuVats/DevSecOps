@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OWASP Vulnerable App - Security Testing Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="lock-icon">🔓</span>
+                <h1>OWASP Vulnerable Application</h1>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link active">Home</a>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+            </nav>
+        </header>
+
+        <!-- Warning Banner -->
+        <div class="warning-banner">
+            <span class="warning-icon">⚠️</span>
+            <strong>WARNING:</strong> This application is intentionally vulnerable for educational purposes only!
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero">
+                <h2>Welcome to the Security Testing Platform</h2>
+                <p>This application demonstrates common web vulnerabilities from the OWASP Top 10 list.</p>
+                <p class="hero-subtitle">Test your security skills by identifying and exploiting these vulnerabilities!
+                </p>
+            </section>
+
+            <!-- Vulnerability Categories -->
+            <section class="vulnerabilities">
+                <h2>Vulnerability Categories</h2>
+
+                <div class="vuln-grid">
+                    <!-- Client-Side Vulnerabilities -->
+                    <div class="vuln-card client-side">
+                        <div class="vuln-header">
+                            <h3>🌐 Client-Side Vulnerabilities</h3>
+                            <span class="badge badge-danger">Critical</span>
+                        </div>
+                        <ul class="vuln-list">
+                            <li>Cross-Site Scripting (XSS) - Reflected</li>
+                            <li>Cross-Site Scripting (XSS) - Stored</li>
+                            <li>Cross-Site Scripting (XSS) - DOM-based</li>
+                            <li>HTML Injection</li>
+                            <li>Client-Side Template Injection</li>
+                            <li>Insecure Direct Object References</li>
+                        </ul>
+                    </div>
+
+                    <!-- Server-Side Vulnerabilities -->
+                    <div class="vuln-card server-side">
+                        <div class="vuln-header">
+                            <h3>🖥️ Server-Side Vulnerabilities</h3>
+                            <span class="badge badge-danger">Critical</span>
+                        </div>
+                        <ul class="vuln-list">
+                            <li>SQL Injection</li>
+                            <li>Command Injection</li>
+                            <li>Server-Side Request Forgery (SSRF)</li>
+                            <li>Path Traversal</li>
+                            <li>Insecure Deserialization</li>
+                        </ul>
+                    </div>
+
+                    <!-- Authentication & Session -->
+                    <div class="vuln-card auth">
+                        <div class="vuln-header">
+                            <h3>🔐 Authentication & Session</h3>
+                            <span class="badge badge-warning">High</span>
+                        </div>
+                        <ul class="vuln-list">
+                            <li>Broken Authentication</li>
+                            <li>Session Fixation</li>
+                            <li>Weak Password Policy</li>
+                            <li>No Rate Limiting</li>
+                            <li>Insecure Password Reset</li>
+                        </ul>
+                    </div>
+
+                    <!-- Access Control -->
+                    <div class="vuln-card access">
+                        <div class="vuln-header">
+                            <h3>🚪 Access Control</h3>
+                            <span class="badge badge-warning">High</span>
+                        </div>
+                        <ul class="vuln-list">
+                            <li>Broken Access Control</li>
+                            <li>Missing Authorization</li>
+                            <li>Privilege Escalation</li>
+                            <li>Insecure Direct Object References</li>
+                        </ul>
+                    </div>
+
+                    <!-- Data Exposure -->
+                    <div class="vuln-card data">
+                        <div class="vuln-header">
+                            <h3>📊 Data Exposure</h3>
+                            <span class="badge badge-warning">High</span>
+                        </div>
+                        <ul class="vuln-list">
+                            <li>Sensitive Data Exposure</li>
+                            <li>Information Disclosure</li>
+                            <li>Debug Information Leakage</li>
+                            <li>API Key Exposure</li>
+                        </ul>
+                    </div>
+
+                    <!-- Security Misconfiguration -->
+                    <div class="vuln-card config">
+                        <div class="vuln-header">
+                            <h3>⚙️ Security Misconfiguration</h3>
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <ul class="vuln-list">
+                            <li>CORS Misconfiguration</li>
+                            <li>Missing Security Headers</li>
+                            <li>Directory Listing Enabled</li>
+                            <li>Verbose Error Messages</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Testing Section -->
+            <section class="testing-section">
+                <h2>🧪 Interactive Vulnerability Testing</h2>
+
+                <!-- XSS Testing -->
+                <div class="test-card">
+                    <h3>1. Cross-Site Scripting (XSS) - Reflected</h3>
+                    <p class="test-description">Test reflected XSS by entering malicious scripts in the search box.</p>
+                    <form class="test-form" onsubmit="return searchReflected(event)">
+                        <input type="text" id="search-input"
+                            placeholder="Search... (try: <script>alert('XSS')</script>)" class="input-field">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </form>
+                    <div id="search-results" class="results-box"></div>
+                    <p class="hint">💡 Hint: Try entering <code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code></p>
+                </div>
+
+                <!-- Stored XSS -->
+                <div class="test-card">
+                    <h3>2. Cross-Site Scripting (XSS) - Stored</h3>
+                    <p class="test-description">Post a comment with malicious script that will be stored and executed
+                        for all users.</p>
+                    <form class="test-form" onsubmit="return postComment(event)">
+                        <textarea id="comment-input"
+                            placeholder="Write a comment... (try: <img src=x onerror=alert('XSS')>)"
+                            class="textarea-field" rows="3"></textarea>
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
+                    </form>
+                    <div id="comments-section" class="comments-box">
+                        <h4>Comments:</h4>
+                        <div id="comments-list"></div>
+                    </div>
+                    <p class="hint">💡 Hint: Try <code>&lt;img src=x onerror=alert('Stored XSS')&gt;</code></p>
+                </div>
+
+                <!-- DOM-based XSS -->
+                <div class="test-card">
+                    <h3>3. Cross-Site Scripting (XSS) - DOM-based</h3>
+                    <p class="test-description">The page uses URL parameters unsafely in JavaScript.</p>
+                    <form class="test-form" onsubmit="return setName(event)">
+                        <input type="text" id="name-input" placeholder="Enter your name" class="input-field">
+                        <button type="submit" class="btn btn-primary">Set Name</button>
+                    </form>
+                    <div id="welcome-message" class="results-box"></div>
+                    <p class="hint">💡 Hint: Try URL parameter
+                        <code>?name=&lt;img src=x onerror=alert('DOM XSS')&gt;</code>
+                    </p>
+                </div>
+
+                <!-- HTML Injection -->
+                <div class="test-card">
+                    <h3>4. HTML Injection</h3>
+                    <p class="test-description">Inject arbitrary HTML into the page.</p>
+                    <form class="test-form" onsubmit="return injectHTML(event)">
+                        <textarea id="html-input" placeholder="Enter HTML... (try: <h1>Injected!</h1>)"
+                            class="textarea-field" rows="3"></textarea>
+                        <button type="submit" class="btn btn-primary">Inject HTML</button>
+                    </form>
+                    <div id="html-output" class="results-box"></div>
+                    <p class="hint">💡 Hint: Try <code>&lt;h1 style="color:red"&gt;Hacked!&lt;/h1&gt;</code></p>
+                </div>
+
+                <!-- Client-Side Authentication Bypass -->
+                <div class="test-card">
+                    <h3>5. Client-Side Authentication Bypass</h3>
+                    <p class="test-description">Authentication logic implemented in JavaScript can be bypassed.</p>
+                    <form class="test-form" onsubmit="return clientLogin(event)">
+                        <input type="text" id="client-username" placeholder="Username" class="input-field">
+                        <input type="password" id="client-password" placeholder="Password" class="input-field">
+                        <button type="submit" class="btn btn-primary">Login (Client-Side)</button>
+                    </form>
+                    <div id="client-auth-result" class="results-box"></div>
+                    <p class="hint">💡 Hint: Check the JavaScript source code or use browser console</p>
+                </div>
+
+                <!-- Insecure Data Storage -->
+                <div class="test-card">
+                    <h3>6. Insecure Client-Side Storage</h3>
+                    <p class="test-description">Sensitive data stored in localStorage/sessionStorage.</p>
+                    <button onclick="showStoredData()" class="btn btn-secondary">View Stored Data</button>
+                    <button onclick="storeApiKey()" class="btn btn-warning">Store API Key</button>
+                    <div id="storage-output" class="results-box"></div>
+                    <p class="hint">💡 Hint: Open DevTools → Application → Local Storage</p>
+                </div>
+            </section>
+
+            <!-- Server-Side Testing -->
+            <section class="testing-section">
+                <h2>🖥️ Server-Side Vulnerability Testing</h2>
+
+                <!-- SQL Injection -->
+                <div class="test-card">
+                    <h3>7. SQL Injection - Login Bypass</h3>
+                    <p class="test-description">Bypass authentication using SQL injection.</p>
+                    <form class="test-form" action="/login" method="POST">
+                        <input type="text" name="username" placeholder="Username (try: admin' OR '1'='1)"
+                            class="input-field">
+                        <input type="password" name="password" placeholder="Password" class="input-field">
+                        <button type="submit" class="btn btn-danger">Login</button>
+                    </form>
+                    <p class="hint">💡 Hint: Username: <code>admin' OR '1'='1</code>, Password: anything</p>
+                </div>
+
+                <!-- Command Injection -->
+                <div class="test-card">
+                    <h3>8. Command Injection</h3>
+                    <p class="test-description">Execute system commands through ping functionality.</p>
+                    <form class="test-form" onsubmit="return pingHost(event)">
+                        <input type="text" id="ping-host" placeholder="Host to ping (try: 127.0.0.1; whoami)"
+                            class="input-field">
+                        <button type="submit" class="btn btn-danger">Ping</button>
+                    </form>
+                    <div id="ping-results" class="results-box"></div>
+                    <p class="hint">💡 Hint: Try <code>127.0.0.1; whoami</code> or <code>127.0.0.1 && dir</code></p>
+                </div>
+
+                <!-- SSRF -->
+                <div class="test-card">
+                    <h3>9. Server-Side Request Forgery (SSRF)</h3>
+                    <p class="test-description">Make the server fetch arbitrary URLs.</p>
+                    <form class="test-form" onsubmit="return fetchURL(event)">
+                        <input type="text" id="fetch-url"
+                            placeholder="URL to fetch (try: http://169.254.169.254/latest/meta-data/)"
+                            class="input-field">
+                        <button type="submit" class="btn btn-danger">Fetch URL</button>
+                    </form>
+                    <div id="fetch-results" class="results-box"></div>
+                    <p class="hint">💡 Hint: Try AWS metadata endpoint or internal IPs</p>
+                </div>
+            </section>
+
+            <!-- Information Disclosure -->
+            <section class="testing-section">
+                <h2>📊 Information Disclosure</h2>
+
+                <div class="test-card">
+                    <h3>10. Debug Information & Sensitive Endpoints</h3>
+                    <p class="test-description">Access sensitive information through exposed endpoints.</p>
+                    <div class="button-group">
+                        <button onclick="window.location.href='/debug'" class="btn btn-warning">View Debug Info</button>
+                        <button onclick="window.location.href='/.env'" class="btn btn-warning">View .env File</button>
+                        <button onclick="window.location.href='/api/keys'" class="btn btn-warning">View API
+                            Keys</button>
+                        <button onclick="viewSource()" class="btn btn-secondary">View Page Source</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hidden Content (Client-Side Security) -->
+            <div id="admin-panel" style="display:none;">
+                <h3>🔒 Admin Panel (Hidden)</h3>
+                <p>Secret Admin Token: <code>admin_token_12345_secret</code></p>
+                <p>Database Password: <code>super_secret_db_pass</code></p>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 OWASP Vulnerable Application | For Educational Purposes Only</p>
+            <p class="footer-warning">⚠️ Never deploy this application in production or expose it to the internet!</p>
+        </footer>
+    </div>
+
+    <!-- Vulnerable JavaScript -->
+    <script src="/app.js"></script>
+</body>
+
+</html>

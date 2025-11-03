@@ -1,0 +1,224 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_IMAGE = 'vulnerable-app'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        SONARQUBE_URL = 'http://sonarqube:9000'
+        AWS_REGION = 'us-east-1'
+        EC2_HOST = credentials('ec2-host')
+        SSH_KEY = credentials('ec2-ssh-key')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code from repository...'
+                checkout scm
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                echo 'Installing Node.js dependencies...'
+                sh 'npm install'
+            }
+        }
+        
+        stage('SAST - SonarQube Analysis') {
+            steps {
+                echo 'Running SonarQube static code analysis...'
+                script {
+                    def scannerHome = tool 'SonarQubeScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=vulnerable-app \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=${SONARQUBE_URL} \
+                            -Dsonar.javascript.node.maxspace=4096
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                echo 'Waiting for SonarQube Quality Gate...'
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: false
+                }
+            }
+        }
+        
+        stage('Dependency Check - OWASP') {
+            steps {
+                echo 'Running OWASP Dependency Check...'
+                dependencyCheck additionalArguments: '''
+                    --scan ./
+                    --format HTML
+                    --format JSON
+                    --prettyPrint
+                ''', odcInstallation: 'OWASP-DC'
+                
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+        
+        stage('Secret Scanning - Trufflehog') {
+            steps {
+                echo 'Scanning for secrets and credentials...'
+                sh '''
+                    docker run --rm -v "$(pwd):/pwd" \
+                    trufflesecurity/trufflehog:latest \
+                    filesystem /pwd \
+                    --json > trufflehog-report.json || true
+                '''
+            }
+        }
+        
+        stage('SAST - Semgrep') {
+            steps {
+                echo 'Running Semgrep security analysis...'
+                sh '''
+                    docker run --rm -v "$(pwd):/src" \
+                    returntocorp/semgrep semgrep \
+                    --config=auto \
+                    --json \
+                    --output=/src/semgrep-report.json \
+                    /src || true
+                '''
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                script {
+                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                    docker.build("${DOCKER_IMAGE}:latest")
+                }
+            }
+        }
+        
+        stage('Container Security Scan - Trivy') {
+            steps {
+                echo 'Scanning Docker image for vulnerabilities...'
+                sh '''
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:latest image \
+                    --severity HIGH,CRITICAL \
+                    --format json \
+                    --output trivy-report.json \
+                    ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+                '''
+            }
+        }
+        
+        stage('Container Security Scan - Grype') {
+            steps {
+                echo 'Running Grype vulnerability scanner...'
+                sh '''
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                    anchore/grype:latest \
+                    ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                    -o json > grype-report.json || true
+                '''
+            }
+        }
+        
+        stage('Push to Registry') {
+            steps {
+                echo 'Pushing Docker image to registry...'
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                        docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
+                        docker.image("${DOCKER_IMAGE}:latest").push()
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to AWS EC2') {
+            steps {
+                echo 'Deploying application to AWS EC2...'
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} << EOF
+                            # Stop existing container
+                            docker stop vulnerable-app || true
+                            docker rm vulnerable-app || true
+                            
+                            # Pull latest image
+                            docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            
+                            # Run new container
+                            docker run -d \
+                                --name vulnerable-app \
+                                -p 3000:3000 \
+                                --restart unless-stopped \
+                                ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            
+                            # Verify deployment
+                            sleep 5
+                            curl -f http://localhost:3000/health || exit 1
+EOF
+                    '''
+                }
+            }
+        }
+        
+        stage('DAST - OWASP ZAP') {
+            steps {
+                echo 'Running OWASP ZAP dynamic security testing...'
+                sh '''
+                    docker run --rm -v $(pwd):/zap/wrk/:rw \
+                    -t owasp/zap2docker-stable zap-baseline.py \
+                    -t http://${EC2_HOST}:3000 \
+                    -J zap-report.json \
+                    -r zap-report.html || true
+                '''
+            }
+        }
+        
+        stage('Performance Testing') {
+            steps {
+                echo 'Running performance tests...'
+                sh '''
+                    docker run --rm -i grafana/k6 run - < k6-test.js || true
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Archiving security reports...'
+            archiveArtifacts artifacts: '''
+                **/dependency-check-report.*,
+                **/trivy-report.json,
+                **/grype-report.json,
+                **/semgrep-report.json,
+                **/trufflehog-report.json,
+                **/zap-report.*
+            ''', allowEmptyArchive: true
+            
+            echo 'Publishing test results...'
+            junit allowEmptyResults: true, testResults: '**/test-results/*.xml'
+            
+            echo 'Cleaning up workspace...'
+            cleanWs()
+        }
+        
+        success {
+            echo '✅ Pipeline completed successfully!'
+            // Send notification (Slack, email, etc.)
+        }
+        
+        failure {
+            echo '❌ Pipeline failed!'
+            // Send failure notification
+        }
+    }
+}

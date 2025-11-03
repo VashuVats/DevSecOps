@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - OWASP Vulnerable App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="lock-icon">🔓</span>
+                <h1>OWASP Vulnerable Application - Admin Panel</h1>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+                <a href="admin.html" class="nav-link active">Admin</a>
+            </nav>
+        </header>
+
+        <div class="warning-banner">
+            <span class="warning-icon">🔒</span>
+            <strong>ADMIN PANEL:</strong> This page should be protected but isn't!
+        </div>
+
+        <main class="main-content">
+            <h2>Admin Dashboard</h2>
+
+            <!-- VULNERABILITY: No server-side authentication check -->
+            <div class="test-card">
+                <h3>⚠️ Security Notice</h3>
+                <p class="message message-warning">
+                    This admin panel has NO server-side authentication! Anyone can access it by:
+                </p>
+                <ul>
+                    <li>Directly navigating to /admin.html</li>
+                    <li>Modifying localStorage to set role='admin'</li>
+                    <li>Bypassing client-side checks</li>
+                </ul>
+            </div>
+
+            <!-- User Management -->
+            <div class="test-card">
+                <h3>👥 User Management</h3>
+                <button onclick="loadAllUsers()" class="btn btn-primary">Load All Users</button>
+                <div id="users-list" class="results-box"></div>
+                <p class="hint">💡 This endpoint exposes all user data including passwords!</p>
+            </div>
+
+            <!-- System Commands -->
+            <div class="test-card">
+                <h3>💻 System Commands (Command Injection)</h3>
+                <form class="test-form" onsubmit="return executeCommand(event)">
+                    <input type="text" id="system-command"
+                        placeholder="Enter command (try: ls, whoami, cat /etc/passwd)" class="input-field">
+                    <button type="submit" class="btn btn-danger">Execute Command</button>
+                </form>
+                <div id="command-output" class="results-box"></div>
+                <p class="hint">💡 Try: <code>ls</code>, <code>whoami</code>, <code>cat /etc/passwd</code></p>
+            </div>
+
+            <!-- Database Query -->
+            <div class="test-card">
+                <h3>🗄️ Direct Database Query (SQL Injection)</h3>
+                <form class="test-form" onsubmit="return executeQuery(event)">
+                    <textarea id="sql-query" class="textarea-field" rows="4"
+                        placeholder="Enter SQL query...">SELECT * FROM users</textarea>
+                    <button type="submit" class="btn btn-warning">Execute Query</button>
+                </form>
+                <div id="query-results" class="results-box"></div>
+                <p class="hint">💡 Try: <code>SELECT * FROM users WHERE '1'='1'</code></p>
+            </div>
+
+            <!-- File Manager -->
+            <div class="test-card">
+                <h3>📁 File Manager (Path Traversal)</h3>
+                <form class="test-form" onsubmit="return downloadFile(event)">
+                    <input type="text" id="file-path" placeholder="File path (try: ../../../../etc/passwd)"
+                        class="input-field">
+                    <button type="submit" class="btn btn-secondary">Download File</button>
+                </form>
+                <p class="hint">💡 Try: <code>../../../../etc/passwd</code> or <code>../../package.json</code></p>
+            </div>
+
+            <!-- Server Configuration -->
+            <div class="test-card">
+                <h3>⚙️ Server Configuration</h3>
+                <button onclick="viewConfig()" class="btn btn-warning">View Configuration</button>
+                <button onclick="viewEnv()" class="btn btn-danger">View Environment Variables</button>
+                <div id="config-output" class="results-box"></div>
+            </div>
+
+            <!-- Logs Viewer -->
+            <div class="test-card">
+                <h3>📋 System Logs</h3>
+                <button onclick="viewLogs()" class="btn btn-secondary">View Logs</button>
+                <div id="logs-output" class="results-box"></div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 OWASP Vulnerable Application | For Educational Purposes Only</p>
+        </footer>
+    </div>
+
+    <script>
+        // VULNERABILITY: Client-side admin check
+        window.addEventListener('DOMContentLoaded', function () {
+            const role = localStorage.getItem('role');
+
+            // WEAK: Client-side authorization
+            if (role !== 'admin') {
+                console.log('Not admin, but you can still access this page!');
+                // In a real app, this should redirect or show error
+                // But we're demonstrating the vulnerability
+            }
+        });
+
+        async function loadAllUsers() {
+            const usersDiv = document.getElementById('users-list');
+            usersDiv.innerHTML = '<div class="loading"></div> Loading...';
+
+            try {
+                // VULNERABILITY: No authentication required
+                const response = await fetch('/admin/users');
+                const users = await response.json();
+
+                // VULNERABILITY: Displaying sensitive data including passwords
+                usersDiv.innerHTML = `
+                    <table style="width:100%; border-collapse: collapse;">
+                        <tr style="background: #667eea; color: white;">
+                            <th style="padding: 10px; border: 1px solid #ddd;">ID</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Username</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Password</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Email</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Role</th>
+                        </tr>
+                        ${users.map(user => `
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.id}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.username}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><code>${user.password}</code></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.email}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.role}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                `;
+            } catch (error) {
+                usersDiv.innerHTML = `<div class="message message-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function executeCommand(event) {
+            event.preventDefault();
+            const command = document.getElementById('system-command').value;
+            const outputDiv = document.getElementById('command-output');
+
+            outputDiv.innerHTML = '<div class="loading"></div> Executing...';
+
+            try {
+                // VULNERABILITY: Command injection via ping endpoint
+                const response = await fetch('/ping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host: `127.0.0.1; ${command}` })
+                });
+
+                const data = await response.json();
+                outputDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                outputDiv.innerHTML = `<div class="message message-error">Error: ${error.message}</div>`;
+            }
+
+            return false;
+        }
+
+        async function executeQuery(event) {
+            event.preventDefault();
+            const query = document.getElementById('sql-query').value;
+            const resultsDiv = document.getElementById('query-results');
+
+            resultsDiv.innerHTML = '<div class="loading"></div> Executing query...';
+
+            // This would need a backend endpoint to actually work
+            resultsDiv.innerHTML = `
+                <div class="message message-warning">
+                    <p>Query would be executed: <code>${query}</code></p>
+                    <p>In a real vulnerable app, this would execute directly against the database!</p>
+                </div>
+            `;
+
+            return false;
+        }
+
+        async function downloadFile(event) {
+            event.preventDefault();
+            const filePath = document.getElementById('file-path').value;
+
+            // VULNERABILITY: Path traversal
+            window.open(`/download?file=${encodeURIComponent(filePath)}`, '_blank');
+
+            return false;
+        }
+
+        async function viewConfig() {
+            const outputDiv = document.getElementById('config-output');
+            outputDiv.innerHTML = '<div class="loading"></div> Loading...';
+
+            try {
+                // VULNERABILITY: Exposing configuration
+                const response = await fetch('/debug');
+                const data = await response.json();
+
+                outputDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                outputDiv.innerHTML = `<div class="message message-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function viewEnv() {
+            const outputDiv = document.getElementById('config-output');
+            outputDiv.innerHTML = '<div class="loading"></div> Loading...';
+
+            try {
+                // VULNERABILITY: Exposing environment variables
+                const response = await fetch('/.env');
+                const data = await response.text();
+
+                outputDiv.innerHTML = `<pre>${data}</pre>`;
+            } catch (error) {
+                outputDiv.innerHTML = `<div class="message message-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function viewLogs() {
+            const logsDiv = document.getElementById('logs-output');
+
+            // Simulated logs with sensitive information
+            const logs = `
+[2024-11-03 01:30:15] INFO: Server started on port 3000
+[2024-11-03 01:30:20] INFO: Database connected: mongodb://admin:SuperSecret123@localhost:27017
+[2024-11-03 01:30:25] WARN: Failed login attempt for user: admin from IP: 192.168.1.100
+[2024-11-03 01:30:30] INFO: User 'admin' logged in successfully
+[2024-11-03 01:30:35] INFO: API Key used: sk_live_51234567890abcdef
+[2024-11-03 01:30:40] ERROR: SQL Query failed: SELECT * FROM users WHERE id = '1' OR '1'='1'
+[2024-11-03 01:30:45] WARN: Suspicious activity detected from IP: 10.0.0.5
+[2024-11-03 01:30:50] INFO: JWT Token generated: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+            `.trim();
+
+            logsDiv.innerHTML = `<pre>${logs}</pre>`;
+        }
+
+        // Log admin access (VULNERABILITY: No actual logging on server)
+        console.log('Admin panel accessed at:', new Date());
+        console.log('User role from localStorage:', localStorage.getItem('role'));
+    </script>
+</body>
+
+</html>
