@@ -1,0 +1,17 @@
+# AWS Credentials
+starbucks_accessKeys.csv
+*accessKeys.csv
+*.pem
+*.key
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
